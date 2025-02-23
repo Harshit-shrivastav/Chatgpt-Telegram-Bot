@@ -39,7 +39,7 @@ A powerful Telegram bot that integrates with an AI assistant to provide real-tim
    ```
 4. Run the bot:
    ```sh
-   python bot.py
+   python3 -m main
    ```
 
 ---
