@@ -3,6 +3,7 @@ import re
 import requests
 import logging
 import time
+import asyncio
 from collections import deque
 from dotenv import load_dotenv
 from telethon import TelegramClient, events
@@ -159,14 +160,14 @@ async def message_handler(event):
 
     youtube_links = re.findall(YOUTUBE_REGEX, message_text)
     if youtube_links:
-        await bot.send_chat_action(chat_id, "record_video")  # Show recording video action
-        for full_url, video_id in youtube_links:
-            transcript = get_youtube_transcript(full_url)
-            message_text = message_text.replace(full_url, transcript)
+        async with bot.action(chat_id, "record_video"):  # Show "recording video" while extracting
+            for full_url, video_id in youtube_links:
+                transcript = get_youtube_transcript(full_url)
+                message_text = message_text.replace(full_url, transcript)
 
     if is_private:
-        await bot.send_chat_action(chat_id, "typing")  # Show typing action
-        response = get_assistant_response(user_id, chat_id, message_text, is_private=True)
+        async with bot.action(chat_id, "typing"):
+            response = get_assistant_response(user_id, chat_id, message_text, is_private=True)
         await event.reply(response)
 
     elif event.is_group:
@@ -180,8 +181,8 @@ async def message_handler(event):
             should_respond = True
 
         if should_respond and message_text:
-            await bot.send_chat_action(chat_id, "typing")  # Show typing action
-            response = get_assistant_response(user_id, chat_id, message_text, is_private=False)
+            async with bot.action(chat_id, "typing"): 
+                response = get_assistant_response(user_id, chat_id, message_text, is_private=False)
             await event.reply(response)
 
     clear_old_conversation_history()
