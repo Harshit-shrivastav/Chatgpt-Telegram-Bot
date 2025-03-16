@@ -144,7 +144,7 @@ async def message_handler(event):
             should_respond = True
 
         # Case 2: Bot is replied to (user clicks reply on bot's message)
-        if event.reply_to and event.reply_to.from_id == bot.me.id:
+        if event.message.mentioned or (event.reply_to and event.reply_to.from_id == bot.me.id):
             should_respond = True
 
         if should_respond and message_text:
@@ -153,14 +153,14 @@ async def message_handler(event):
 
     clear_old_conversation_history()
 
+"""
 @bot.on(events.InlineQuery)
 async def inline_query_handler(event):
-    """Handles inline queries."""
     query = event.text.strip()
     if not query:
         return
     response = get_assistant_response(event.sender_id, event.chat_id, query, is_private=True)
     await event.answer([event.builder.article(title="AI Response", description=response, text=response)])
-
+"""
 print("🎊 Bot is now active!")
 bot.run_until_disconnected()
