@@ -160,10 +160,10 @@ async def message_handler(event):
 
     youtube_links = re.findall(YOUTUBE_REGEX, message_text)
     if youtube_links:
-        async with bot.action(chat_id, "record_video"):  # Show "recording video" while extracting
-            for full_url, video_id in youtube_links:
-                transcript = get_youtube_transcript(full_url)
-                message_text = message_text.replace(full_url, transcript)
+        #async with bot.action(chat_id, "record_video"):  # Show "recording video" while extracting
+        for full_url, video_id in youtube_links:
+            transcript = get_youtube_transcript(full_url)
+            message_text = message_text.replace(full_url, transcript)
 
     if is_private:
         async with bot.action(chat_id, "typing"):
