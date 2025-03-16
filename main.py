@@ -121,9 +121,9 @@ async def message_handler(event):
     chat_id = event.chat_id
     is_private = event.is_private
     sender = await event.get_sender()
-    sender_name = sender.first_name
 
     message_text = event.raw_text.strip()  # Get raw text
+    bot_username = (await bot.get_me()).username
 
     # Replace YouTube links with transcripts
     youtube_links = re.findall(YOUTUBE_REGEX, message_text)
@@ -136,15 +136,18 @@ async def message_handler(event):
         await event.reply(response)
 
     elif event.is_group:
-        bot_username = (await bot.get_me()).username
+        should_respond = False
 
-        # If bot is tagged, remove mention
+        # Case 1: User mentions bot (@bot_username message)
         if message_text.startswith(f"@{bot_username}"):
-            message_text = message_text[len(bot_username) + 2 :].strip()
+            message_text = message_text[len(bot_username) + 2:].strip()
+            should_respond = True
 
-            if not message_text:  # Ignore if just bot mention
-                return
+        # Case 2: Bot is replied to (user clicks reply on bot's message)
+        if event.reply_to and event.reply_to.from_id == bot.me.id:
+            should_respond = True
 
+        if should_respond and message_text:
             response = get_assistant_response(user_id, chat_id, message_text, is_private=False)
             await event.reply(response)
 
