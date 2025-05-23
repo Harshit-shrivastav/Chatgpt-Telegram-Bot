@@ -252,8 +252,12 @@ async def message_handler(event):
         if message_text.startswith(f"@{bot_username}"):
             message_text = message_text[len(bot_username)+2:].strip()
             should_respond = True
-        if event.message.mentioned or (event.reply_to and event.reply_to.from_id == bot.me.id):
+        if event.message.mentioned:
             should_respond = True
+        if event.is_reply:
+            reply_msg = await event.get_reply_message()
+            if reply_msg and reply_msg.sender_id == (await bot.get_me()).id:
+                should_respond = True
         if should_respond and message_text:
             async with bot.action(chat_id, "typing"):
                 response = await get_assistant_response(event, message_text, False)
