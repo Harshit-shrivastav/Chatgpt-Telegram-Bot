@@ -4,6 +4,7 @@ import requests
 import logging
 import time
 import asyncio
+import aiohttp
 from collections import defaultdict, deque
 from dotenv import load_dotenv
 from telethon import TelegramClient, events, types
@@ -13,7 +14,7 @@ load_dotenv()
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-BASE_URL = "https://api.h-s.site"
+BASE_URL = "https://text.pollinations.ai/openai"
 
 bot = TelegramClient("bot", API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
@@ -52,7 +53,7 @@ SYSTEM_PROMPT_TEMPLATE = """You are @askllmbot, an AI assistant in Telegram. Cur
 Guidelines:
 1. Respond appropriately to the chat environment
 2. Detect spam patterns
-3. For spam, respond with exactly "[SPAM_DETECTED]"
+3. For spam, Abusive words, And other similar spams respond with exactly "[SPAM_DETECTED]"
 4. In groups, only respond when mentioned or replied to"""
 
 def get_system_prompt(context):
@@ -127,23 +128,32 @@ async def get_assistant_response(event, user_prompt, is_private):
 
         history.append({"role": "user", "content": user_prompt})
 
-        token_response = requests.get(f"{BASE_URL}/v1/get-token")
-        token = token_response.json().get("token")
-        if not token:
-            return "Error: API token failed"
-
+        
+        url = "https://text.pollinations.ai/openai"
         payload = {
-            "token": token,
-            "model": "gpt-4o-mini",
-            "message": [{"role": "system", "content": system_prompt}] + list(history),
-            "stream": False
+            "model": "openai",
+            "messages": [
+                {"role": "system", "content": system_prompt}
+            ] + list(history),
+            "seed": 101,
+            "temperature": 0.7
         }
+        headers = {"Content-Type": "application/json"}
 
-        response = requests.post(f"{BASE_URL}/v1/chat/completions", json=payload)
-        response_data = response.json()
-        content = response_data["choice"][0]["message"]["content"]
-        history.append({"role": "assistant", "content": content})
-        return content
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as response:
+                data = await response.json()
+                content = ""
+                if 'choices' in data and data['choices']:
+                    content = data['choices'][0]['message']['content']
+                elif 'message' in data:
+                    content = data['message']['content']
+                
+                if content:
+                    history.append({"role": "assistant", "content": content})
+                    return content
+                else:
+                    return "Sorry, I couldn't generate a response"
     except Exception as e:
         logger.error(f"API error: {e}")
         return "Sorry, I encountered an error"
